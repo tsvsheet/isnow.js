@@ -12,7 +12,8 @@
   ],
   "scripts": {
     "test": "node --test --experimental-test-coverage --test-coverage-include='src/isnow/**' --test-coverage-lines=100 tests/*.test.js",
-    "lint": "eslint src/isnow tests"
+    "lint": "eslint src/isnow tests",
+    "playground": "node playground/build.mjs"
   },
   "license": "Apache-2.0",
   "homepage": "https://uplang.org",
@@ -20,6 +21,7 @@
     "antlr4": "4.13.2"
   },
   "devDependencies": {
+    "esbuild": "^0.28.1",
     "eslint": "^9.0.0",
     "js-yaml": "^4.1.0"
   }

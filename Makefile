@@ -6,7 +6,7 @@
 # from every gate). The conformance suite runs against ../isnow/conformance
 # when present and self-skips otherwise.
 
-.PHONY: help check ci lint test grammars
+.PHONY: help check ci lint test grammars playground
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*## "}{printf "  %-10s %s\n", $$1, $$2}'
@@ -23,3 +23,6 @@ test: ## node --test with 100% line coverage of the residue; runs the corpus whe
 
 grammars: ## Regenerate src/isnowgrammar from ../isnow (needs Docker)
 	$(MAKE) -C ../isnow js
+
+playground: ## Build the browser playground bundle
+	node playground/build.mjs

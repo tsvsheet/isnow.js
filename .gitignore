@@ -5,3 +5,6 @@
 # JavaScript build artifacts
 node_modules/
 dist/
+
+# Playground bundle (rebuilt from src via playground/build.mjs)
+playground/isnow.bundle.js

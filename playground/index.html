@@ -1,0 +1,656 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>isnow · is it now?</title>
+<meta name="description" content="Interactive playground for isnow (DTimpalr) — a date/time pattern language. Type an isnow, see whether it holds right now, its canonical form, and the next occurrences.">
+<style>
+  /* ---- Instrument tokens ------------------------------------------------ */
+  :root {
+    --bg:        #0b0e14;
+    --bg-glow:   #12203a;
+    --panel:     #121722;
+    --panel-2:   #0e131c;
+    --line:      #232c3b;
+    --line-soft: #1a2130;
+    --ink:       #e7ecf4;
+    --muted:     #8b95a7;
+    --faint:     #64708a;
+    --amber:     #f5b544;   /* the instrument color: structure, labels, canonical */
+    --amber-dim: #b98a2e;
+    --signal:    #4fd6a8;   /* holds */
+    --signal-bg: rgba(79,214,168,.10);
+    --quiet:     #7a869c;   /* does not hold */
+    --coral:     #ff7a6b;   /* parse fault */
+    --coral-bg:  rgba(255,122,107,.09);
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", "Cascadia Code", monospace;
+    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --radius: 9px;
+  }
+  :root[data-theme="light"] {
+    --bg:        #eef1f6;
+    --bg-glow:   #dfe7f5;
+    --panel:     #ffffff;
+    --panel-2:   #f5f7fb;
+    --line:      #d8deea;
+    --line-soft: #e6eaf2;
+    --ink:       #182234;
+    --muted:     #5a6579;
+    --faint:     #8791a3;
+    --amber:     #a86a12;
+    --amber-dim: #b9791a;
+    --signal:    #0f9d6e;
+    --signal-bg: rgba(15,157,110,.10);
+    --quiet:     #6a7488;
+    --coral:     #cf3d2c;
+    --coral-bg:  rgba(207,61,44,.08);
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --bg:#eef1f6; --bg-glow:#dfe7f5; --panel:#fff; --panel-2:#f5f7fb;
+      --line:#d8deea; --line-soft:#e6eaf2; --ink:#182234; --muted:#5a6579;
+      --faint:#8791a3; --amber:#a86a12; --amber-dim:#b9791a; --signal:#0f9d6e;
+      --signal-bg:rgba(15,157,110,.10); --quiet:#6a7488; --coral:#cf3d2c;
+      --coral-bg:rgba(207,61,44,.08);
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    font-family: var(--sans);
+    color: var(--ink);
+    background:
+      radial-gradient(1100px 520px at 50% -8%, var(--bg-glow), transparent 62%),
+      var(--bg);
+    background-attachment: fixed;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; }
+
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 22px 88px; }
+
+  /* ---- Masthead --------------------------------------------------------- */
+  header.top {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 18px; flex-wrap: wrap;
+    padding: 30px 0 22px;
+  }
+  .brand { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+  .wordmark {
+    font-family: var(--mono);
+    font-size: clamp(30px, 5vw, 44px);
+    font-weight: 600;
+    letter-spacing: -.02em;
+    line-height: 1;
+    margin: 0;
+  }
+  .wordmark .dot { color: var(--amber); }
+  .wordmark .q { color: var(--muted); font-weight: 400; }
+  .tagline {
+    font-size: 13.5px; color: var(--muted); max-width: 42ch;
+    margin: 0;
+  }
+  .tagline b { color: var(--ink); font-weight: 600; }
+
+  .theme-btn {
+    font-family: var(--mono); font-size: 12px;
+    color: var(--muted); background: var(--panel);
+    border: 1px solid var(--line); border-radius: 999px;
+    padding: 7px 14px; cursor: pointer; white-space: nowrap;
+    transition: color .15s, border-color .15s;
+  }
+  .theme-btn:hover { color: var(--ink); border-color: var(--amber-dim); }
+  .theme-btn:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+
+  /* ---- Panels ----------------------------------------------------------- */
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: 0 1px 0 rgba(255,255,255,.02) inset, 0 18px 40px -30px rgba(0,0,0,.8);
+  }
+  .eyebrow {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .18em;
+    text-transform: uppercase; color: var(--amber);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .eyebrow::after {
+    content: ""; flex: 1; height: 1px;
+    background: linear-gradient(90deg, var(--line), transparent);
+  }
+
+  /* ---- The evaluator (hero) --------------------------------------------- */
+  .evaluator { padding: 22px 22px 26px; }
+  .evaluator .field-note {
+    font-family: var(--mono); font-size: 11px; color: var(--faint);
+    margin: 14px 2px 8px; letter-spacing: .04em;
+  }
+  .isnow-input {
+    width: 100%;
+    font-family: var(--mono);
+    font-size: clamp(20px, 3.4vw, 30px);
+    font-weight: 500;
+    color: var(--ink);
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 18px 18px;
+    letter-spacing: -.01em;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .isnow-input::placeholder { color: var(--faint); }
+  .isnow-input:focus {
+    outline: none; border-color: var(--amber);
+    box-shadow: 0 0 0 3px rgba(245,181,68,.14);
+  }
+  .isnow-input.fault { border-color: var(--coral); }
+  .isnow-input.fault:focus { box-shadow: 0 0 0 3px var(--coral-bg); }
+
+  /* verdict + clock readout */
+  .readout {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 18px; flex-wrap: wrap;
+    margin-top: 18px;
+    padding: 16px 18px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background:
+      radial-gradient(420px 120px at 22% 0%, var(--signal-bg), transparent 70%),
+      var(--panel-2);
+  }
+  .verdict { display: flex; align-items: center; gap: 13px; min-width: 0; }
+  .lamp {
+    width: 12px; height: 12px; border-radius: 50%;
+    background: var(--quiet); flex: none;
+    box-shadow: 0 0 0 4px rgba(122,134,156,.14);
+  }
+  .readout.holds .lamp {
+    background: var(--signal);
+    box-shadow: 0 0 0 4px var(--signal-bg), 0 0 14px var(--signal);
+    animation: pulse 2s ease-in-out infinite;
+  }
+  .readout.fault .lamp {
+    background: var(--coral);
+    box-shadow: 0 0 0 4px var(--coral-bg);
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.45} }
+  .verdict-text { font-size: 15px; font-weight: 600; }
+  .verdict-text small { display:block; font-weight: 400; font-size: 12px; color: var(--muted); }
+  .readout.holds .verdict-text { color: var(--signal); }
+  .readout.fault .verdict-text { color: var(--coral); }
+
+  .clock { text-align: right; font-family: var(--mono); }
+  .clock .time { font-size: 22px; font-weight: 600; letter-spacing: .02em; }
+  .clock .colon { color: var(--amber); }
+  .clock .meta { font-size: 11.5px; color: var(--muted); letter-spacing: .03em; }
+
+  /* result cards */
+  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px; }
+  .card {
+    border: 1px solid var(--line-soft); border-radius: var(--radius);
+    padding: 14px 15px; background: var(--panel-2); min-width: 0;
+  }
+  .card h3 {
+    margin: 0 0 9px; font-family: var(--mono); font-size: 10.5px;
+    letter-spacing: .16em; text-transform: uppercase; color: var(--muted);
+    font-weight: 600;
+  }
+  .card .canon {
+    font-family: var(--mono); font-size: 16px; color: var(--amber);
+    word-break: break-word; line-height: 1.45;
+  }
+  .card .explain { font-size: 14.5px; color: var(--ink); }
+  .card.span2 { grid-column: 1 / -1; }
+  .card.fault-card { border-color: var(--coral); background: var(--coral-bg); }
+  .card.fault-card .explain { color: var(--coral); }
+  .card.fault-card code {
+    font-family: var(--mono); color: var(--coral); font-weight: 600;
+    text-transform: uppercase; font-size: 11px; letter-spacing: .1em;
+  }
+
+  ol.occ { list-style: none; margin: 0; padding: 0; }
+  ol.occ li {
+    display: flex; align-items: baseline; gap: 12px;
+    font-family: var(--mono); font-size: 13.5px;
+    padding: 6px 0; border-top: 1px dashed var(--line-soft);
+  }
+  ol.occ li:first-child { border-top: none; }
+  ol.occ .n { color: var(--faint); font-size: 11px; width: 1.4em; flex: none; }
+  ol.occ .when { color: var(--ink); }
+  ol.occ .rel { margin-left: auto; color: var(--muted); font-size: 11.5px; white-space: nowrap; }
+  ol.occ .none { color: var(--muted); font-family: var(--sans); }
+
+  /* ---- Lower grid: builder + gallery ------------------------------------ */
+  .grid { display: grid; grid-template-columns: 1.35fr 1fr; gap: 20px; margin-top: 22px; }
+
+  .builder { padding: 20px; }
+  .builder p.lede { margin: 12px 0 18px; font-size: 13.5px; color: var(--muted); }
+  .fieldset { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .fld { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+  .fld label {
+    font-family: var(--mono); font-size: 10px; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .fld label .grp { color: var(--amber-dim); }
+  .fld input {
+    font-family: var(--mono); font-size: 14px; color: var(--ink);
+    background: var(--panel-2); border: 1px solid var(--line);
+    border-radius: 7px; padding: 9px 10px; width: 100%;
+  }
+  .fld input::placeholder { color: var(--faint); }
+  .fld input:focus { outline: none; border-color: var(--amber); box-shadow: 0 0 0 3px rgba(245,181,68,.12); }
+  .fld input.fault { border-color: var(--coral); }
+  .bounds { grid-template-columns: 1fr 1fr; margin-top: 12px; }
+
+  .compose {
+    margin-top: 18px; padding: 14px 15px;
+    border: 1px solid var(--line); border-radius: var(--radius);
+    background: var(--panel-2);
+  }
+  .compose .row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .compose .out {
+    font-family: var(--mono); font-size: 16px; color: var(--ink);
+    word-break: break-word; flex: 1; min-width: 160px;
+  }
+  .compose .out.fault { color: var(--coral); }
+  .btn {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .04em;
+    border-radius: 7px; padding: 8px 13px; cursor: pointer;
+    border: 1px solid var(--line); background: var(--panel);
+    color: var(--ink); white-space: nowrap; transition: border-color .15s, color .15s, background .15s;
+  }
+  .btn:hover { border-color: var(--amber); }
+  .btn:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+  .btn.primary { border-color: var(--amber-dim); color: var(--amber); }
+  .btn.copied { border-color: var(--signal); color: var(--signal); }
+  .compose .canon-line {
+    margin-top: 11px; font-family: var(--mono); font-size: 12.5px; color: var(--muted);
+    word-break: break-word;
+  }
+  .compose .canon-line b { color: var(--amber); font-weight: 500; }
+  .rt {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .05em;
+    display: inline-flex; align-items: center; gap: 6px; color: var(--signal);
+  }
+  .rt.bad { color: var(--coral); }
+  .rt::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+
+  /* ---- Gallery ---------------------------------------------------------- */
+  .gallery { padding: 20px; }
+  .gallery p.lede { margin: 12px 0 16px; font-size: 13.5px; color: var(--muted); }
+  ul.specimens { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; }
+  .specimen {
+    width: 100%; text-align: left; cursor: pointer;
+    display: flex; flex-direction: column; gap: 3px;
+    border: 1px solid var(--line-soft); border-radius: 8px;
+    background: var(--panel-2); padding: 11px 13px;
+    transition: border-color .15s, transform .08s;
+  }
+  .specimen:hover { border-color: var(--amber-dim); }
+  .specimen:active { transform: translateY(1px); }
+  .specimen:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+  .specimen .src { font-family: var(--mono); font-size: 14.5px; color: var(--amber); }
+  .specimen .cap { font-size: 12.5px; color: var(--muted); }
+
+  footer.foot {
+    margin-top: 30px; padding-top: 18px; border-top: 1px solid var(--line-soft);
+    font-size: 12.5px; color: var(--faint); display: flex; gap: 8px; flex-wrap: wrap;
+    font-family: var(--mono);
+  }
+  footer.foot a { color: var(--muted); text-decoration: none; border-bottom: 1px solid var(--line); }
+  footer.foot a:hover { color: var(--amber); border-color: var(--amber-dim); }
+
+  @media (max-width: 860px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 560px) {
+    .cards { grid-template-columns: 1fr; }
+    .fieldset { grid-template-columns: 1fr 1fr; }
+    .clock { text-align: left; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="brand">
+      <h1 class="wordmark">is<span class="dot">·</span>now<span class="q"> ?</span></h1>
+      <p class="tagline"><b>DTimpalr</b> — a date/time pattern language. One compact isnow describes a recurrence and answers a single question: does it <b>hold</b> right now?</p>
+    </div>
+    <button class="theme-btn" id="theme" type="button" aria-label="Toggle colour theme">◐ theme</button>
+  </header>
+
+  <!-- ============ THE EVALUATOR (R1) ============ -->
+  <section class="panel evaluator" aria-labelledby="eval-h">
+    <div class="eyebrow" id="eval-h">Evaluator · is it now?</div>
+    <p class="field-note">Y/m/d &nbsp; w &nbsp; H:M:S &nbsp;&nbsp;[ &gt; since ]&nbsp;[ &lt; until ]</p>
+    <input id="isnow" class="isnow-input" type="text" spellcheck="false" autocomplete="off"
+           autocapitalize="off" aria-label="isnow pattern"
+           value="M,W,F noon" placeholder="type an isnow, e.g. M,W,F noon">
+
+    <div class="readout" id="readout">
+      <div class="verdict">
+        <span class="lamp" aria-hidden="true"></span>
+        <span class="verdict-text" id="verdict">—<small id="verdict-sub"></small></span>
+      </div>
+      <div class="clock">
+        <div class="time" id="clock">--<span class="colon">:</span>--<span class="colon">:</span>--</div>
+        <div class="meta" id="clock-meta"></div>
+      </div>
+    </div>
+
+    <div class="cards" id="cards">
+      <div class="card">
+        <h3>Canonical form</h3>
+        <div class="canon" id="canonical">—</div>
+      </div>
+      <div class="card">
+        <h3>Explanation</h3>
+        <div class="explain" id="explain">—</div>
+      </div>
+      <div class="card span2">
+        <h3>Next 5 occurrences</h3>
+        <ol class="occ" id="occ"></ol>
+      </div>
+    </div>
+  </section>
+
+  <div class="grid">
+    <!-- ============ THE BUILDER (R2) ============ -->
+    <section class="panel builder" aria-labelledby="build-h">
+      <div class="eyebrow" id="build-h">Builder · compose the seven fields</div>
+      <p class="lede">Fill any field with a value or the algebra (<code>*</code>, <code>,</code>, <code>-</code>, <code>!</code>, <code>±[N]</code>); blanks default to wildcard. The composed isnow appears below.</p>
+      <div class="fieldset">
+        <div class="fld"><label><span class="grp">date/</span> year</label><input data-f="year" placeholder="*"></div>
+        <div class="fld"><label><span class="grp">date/</span> month</label><input data-f="month" placeholder="*"></div>
+        <div class="fld"><label><span class="grp">date/</span> day</label><input data-f="day" placeholder="*"></div>
+        <div class="fld"><label>weekday</label><input data-f="weekday" placeholder="*"></div>
+        <div class="fld"><label><span class="grp">time:</span> hour</label><input data-f="hour" placeholder="*"></div>
+        <div class="fld"><label><span class="grp">time:</span> minute</label><input data-f="minute" placeholder="*"></div>
+        <div class="fld"><label><span class="grp">time:</span> second</label><input data-f="second" placeholder="*"></div>
+      </div>
+      <div class="fieldset bounds">
+        <div class="fld"><label>since bound</label><input data-f="since" placeholder="&gt;=6"></div>
+        <div class="fld"><label>until bound</label><input data-f="until" placeholder="&lt;=18"></div>
+      </div>
+
+      <div class="compose">
+        <div class="row">
+          <code class="out" id="composed">*/*/* * *:*:*</code>
+          <button class="btn primary" id="copy" type="button">copy</button>
+          <button class="btn" id="tryit" type="button">try above ↑</button>
+        </div>
+        <div class="canon-line" id="compose-canon"></div>
+      </div>
+    </section>
+
+    <!-- ============ THE GALLERY (R3) ============ -->
+    <section class="panel gallery" aria-labelledby="gal-h">
+      <div class="eyebrow" id="gal-h">Gallery · load an example</div>
+      <p class="lede">Click any specimen to drop it into the evaluator.</p>
+      <ul class="specimens" id="specimens"></ul>
+    </section>
+  </div>
+
+  <footer class="foot">
+    <span>isnow (DTimpalr)</span><span>·</span>
+    <span>an isnow <b>holds at</b> an instant</span><span>·</span>
+    <span>evaluated locally in your zone <b id="foot-zone"></b> — no network</span>
+  </footer>
+
+</div>
+
+<script type="module">
+  import { parse, IsnowError } from './isnow.bundle.js';
+
+  /* ---- helpers ---------------------------------------------------------- */
+  const $ = (id) => document.getElementById(id);
+  const zone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'local';
+
+  // Evaluate every isnow in the visitor's own zone (R1) — the library defaults
+  // to UTC, so the zone must be passed explicitly for `holds`/`next` to line up
+  // with the wall clock shown on the page.
+  const parseHere = (src) => parse(src, { timeZone: zone });
+
+  const fmtDate = new Intl.DateTimeFormat(undefined, {
+    weekday: 'short', year: 'numeric', month: 'short', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+  });
+  const pad = (n) => String(n).padStart(2, '0');
+
+  function relative(from, to) {
+    let s = Math.round((to - from) / 1000);
+    if (s < 0) return 'past';
+    const units = [['d', 86400], ['h', 3600], ['m', 60]];
+    const parts = [];
+    for (const [u, secs] of units) {
+      if (s >= secs) { parts.push(Math.floor(s / secs) + u); s %= secs; }
+      if (parts.length === 2) break;
+    }
+    if (!parts.length) parts.push(s + 's');
+    return 'in ' + parts.join(' ');
+  }
+
+  /* ---- evaluator state -------------------------------------------------- */
+  let current = null;   // { pattern } | { error }
+
+  function evaluate(src) {
+    const input = $('isnow');
+    try {
+      current = { pattern: parseHere(src) };
+      input.classList.remove('fault');
+    } catch (e) {
+      const code = e instanceof IsnowError ? e.code : 'error';
+      current = { error: code, message: e.message };
+      input.classList.add('fault');
+    }
+    renderStatic();
+    renderLive();
+  }
+
+  function renderStatic() {
+    const cards = $('cards');
+    if (current.error) {
+      cards.innerHTML =
+        '<div class="card span2 fault-card"><h3>Parse fault</h3>' +
+        '<div class="explain"><code>' + current.error + '</code> — ' +
+        escapeHtml(current.message) + '</div></div>';
+      return;
+    }
+    // restore the three cards if we came back from a fault
+    if (!$('canonical')) restoreCards();
+    $('canonical').textContent = current.pattern.canonical;
+    $('explain').textContent = current.pattern.explain();
+  }
+
+  function restoreCards() {
+    $('cards').innerHTML =
+      '<div class="card"><h3>Canonical form</h3><div class="canon" id="canonical">—</div></div>' +
+      '<div class="card"><h3>Explanation</h3><div class="explain" id="explain">—</div></div>' +
+      '<div class="card span2"><h3>Next 5 occurrences</h3><ol class="occ" id="occ"></ol></div>';
+  }
+
+  function renderLive() {
+    const now = new Date();
+    renderClock(now);
+    if (current.error) {
+      setVerdict('fault', 'Cannot evaluate', 'fix the isnow above');
+      return;
+    }
+    const holds = current.pattern.holds(now);
+    setVerdict(holds ? 'holds' : 'quiet',
+      holds ? 'Holds now' : 'Does not hold now',
+      holds ? 'every field constraint is satisfied' : 'at least one field constraint is unmet');
+    renderOccurrences(now);
+  }
+
+  function setVerdict(state, text, sub) {
+    const r = $('readout');
+    r.classList.toggle('holds', state === 'holds');
+    r.classList.toggle('fault', state === 'fault');
+    $('verdict').firstChild.nodeValue = text;
+    $('verdict-sub').textContent = sub;
+  }
+
+  function renderClock(now) {
+    $('clock').innerHTML =
+      pad(now.getHours()) + '<span class="colon">:</span>' +
+      pad(now.getMinutes()) + '<span class="colon">:</span>' +
+      pad(now.getSeconds());
+    $('clock-meta').textContent =
+      now.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }) +
+      ' · ' + zone;
+  }
+
+  function renderOccurrences(now) {
+    const ol = $('occ');
+    if (!ol) return;
+    const items = [];
+    let cursor = now;
+    for (let i = 0; i < 5; i += 1) {
+      const nxt = current.pattern.next(cursor);
+      if (nxt === null) break;
+      items.push(nxt);
+      cursor = nxt;
+    }
+    if (!items.length) {
+      ol.innerHTML = '<li class="none">No occurrence within the next 100 years — the window may be closed.</li>';
+      return;
+    }
+    ol.innerHTML = items.map((d, i) =>
+      '<li><span class="n">' + (i + 1) + '</span>' +
+      '<span class="when">' + fmtDate.format(d) + '</span>' +
+      '<span class="rel">' + relative(now, d) + '</span></li>').join('');
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  }
+
+  /* ---- input wiring (debounced) ---------------------------------------- */
+  let debounce;
+  $('isnow').addEventListener('input', (e) => {
+    clearTimeout(debounce);
+    const src = e.target.value.trim();
+    debounce = setTimeout(() => evaluate(src || '*'), 160);
+  });
+
+  /* re-evaluate against the wall clock every second */
+  setInterval(renderLive, 1000);
+
+  /* ---- builder (R2) ----------------------------------------------------- */
+  const FIELDS = ['year', 'month', 'day', 'weekday', 'hour', 'minute', 'second', 'since', 'until'];
+  const builderInputs = {};
+  document.querySelectorAll('.builder input[data-f]').forEach((el) => {
+    builderInputs[el.dataset.f] = el;
+    el.addEventListener('input', renderBuilder);
+  });
+
+  function composeIsnow() {
+    const v = (k) => (builderInputs[k].value.trim() || '');
+    const d = (k) => v(k) || '*';
+    let s = `${d('year')}/${d('month')}/${d('day')} ${d('weekday')} ${d('hour')}:${d('minute')}:${d('second')}`;
+    if (v('since')) s += ' ' + v('since');
+    if (v('until')) s += ' ' + v('until');
+    return s;
+  }
+
+  function renderBuilder() {
+    const src = composeIsnow();
+    const out = $('composed');
+    const canonLine = $('compose-canon');
+    out.textContent = src;
+    // clear per-field fault marks
+    Object.values(builderInputs).forEach((el) => el.classList.remove('fault'));
+    try {
+      const p = parseHere(src);
+      const roundTrips = parseHere(p.canonical).canonical === p.canonical;
+      out.classList.remove('fault');
+      canonLine.innerHTML =
+        'canonical <b>' + escapeHtml(p.canonical) + '</b> &nbsp; ' +
+        '<span class="rt' + (roundTrips ? '' : ' bad') + '">' +
+        (roundTrips ? 'round-trips' : 'no round-trip') + '</span>';
+      $('copy').dataset.payload = src;
+    } catch (e) {
+      out.classList.add('fault');
+      const code = e instanceof IsnowError ? e.code : 'error';
+      canonLine.innerHTML = '<span class="rt bad">' + code + ' — ' + escapeHtml(e.message) + '</span>';
+      $('copy').dataset.payload = '';
+    }
+  }
+
+  $('copy').addEventListener('click', async () => {
+    const payload = $('copy').dataset.payload;
+    if (!payload) return;
+    try { await navigator.clipboard.writeText(payload); }
+    catch { fallbackCopy(payload); }
+    const btn = $('copy');
+    btn.classList.add('copied');
+    btn.textContent = 'copied ✓';
+    setTimeout(() => { btn.classList.remove('copied'); btn.textContent = 'copy'; }, 1400);
+  });
+
+  function fallbackCopy(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); } finally { document.body.removeChild(ta); }
+  }
+
+  $('tryit').addEventListener('click', () => loadPattern(composeIsnow()));
+
+  /* ---- gallery (R3) ----------------------------------------------------- */
+  const SPECIMENS = [
+    ['6', 'Every day at 06:00'],
+    ['M,W,F midnight', 'Mon / Wed / Fri at 00:00'],
+    ['11/ Th-[1] noon', 'The last Thursday of November, at noon'],
+    ['::+[9] >=6 <=18', 'Every 9 seconds, from 06:00 to 18:00'],
+    ['/1 18', 'The 1st of every month, at 18:00'],
+    ['Su :0,30', 'Sundays, on the hour and the half-hour'],
+    ['*/*/1 * 12:*:00', 'The first of the month, throughout the noon hour'],
+    ['12 <9/1', 'Every day at noon, until September 1'],
+    ['/1+[3w] 12 >=2011 <2016', 'Every 3rd week at noon, across 2011–2015'],
+    ['midnight', 'Every day at 00:00'],
+  ];
+
+  const ul = $('specimens');
+  ul.innerHTML = SPECIMENS.map(([src, cap]) =>
+    '<li><button class="specimen" type="button" data-src="' + escapeHtml(src) + '">' +
+    '<span class="src">' + escapeHtml(src) + '</span>' +
+    '<span class="cap">' + escapeHtml(cap) + '</span></button></li>').join('');
+  ul.querySelectorAll('.specimen').forEach((btn) => {
+    btn.addEventListener('click', () => loadPattern(btn.dataset.src));
+  });
+
+  function loadPattern(src) {
+    const input = $('isnow');
+    input.value = src;
+    evaluate(src);
+    input.focus();
+    document.querySelector('.evaluator').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  /* ---- theme toggle ----------------------------------------------------- */
+  const root = document.documentElement;
+  const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+  root.setAttribute('data-theme', prefersLight ? 'light' : 'dark');
+  $('theme').addEventListener('click', () => {
+    const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+  });
+
+  /* ---- boot ------------------------------------------------------------- */
+  $('foot-zone').textContent = zone;
+  evaluate($('isnow').value.trim());
+  renderBuilder();
+</script>
+</body>
+</html>
