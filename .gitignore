@@ -1,0 +1,7 @@
+# ANTLR auxiliary artifacts (regenerated; never committed)
+*.interp
+*.tokens
+
+# JavaScript build artifacts
+node_modules/
+dist/

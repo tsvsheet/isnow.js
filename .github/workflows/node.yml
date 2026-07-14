@@ -1,0 +1,28 @@
+# The JavaScript engine's quality gate: eslint (complexity <= 7) and the node
+# test runner at 100% coverage of the residue. The conformance suite self-skips
+# when the sibling corpus checkout is absent; the unit suite alone carries the
+# coverage gate.
+name: node
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+concurrency:
+  group: node-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  node:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci
+      - run: make ci

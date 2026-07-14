@@ -1,0 +1,26 @@
+{
+  "name": "@uplang/isnow",
+  "version": "0.1.0",
+  "description": "isnow (DTimpalr) date/time pattern language — the JavaScript engine of the normative ANTLR grammar",
+  "type": "module",
+  "main": "src/isnow/index.js",
+  "exports": {
+    ".": "./src/isnow/index.js"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "test": "node --test --experimental-test-coverage --test-coverage-include='src/isnow/**' --test-coverage-lines=100 tests/*.test.js",
+    "lint": "eslint src/isnow tests"
+  },
+  "license": "Apache-2.0",
+  "homepage": "https://uplang.org",
+  "dependencies": {
+    "antlr4": "4.13.2"
+  },
+  "devDependencies": {
+    "eslint": "^9.0.0",
+    "js-yaml": "^4.1.0"
+  }
+}
