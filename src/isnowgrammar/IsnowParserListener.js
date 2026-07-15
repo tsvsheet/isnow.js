@@ -32,6 +32,15 @@ export default class IsnowParserListener extends antlr4.tree.ParseTreeListener {
 	}
 
 
+	// Enter a parse tree produced by IsnowParser#exclusion.
+	enterExclusion(ctx) {
+	}
+
+	// Exit a parse tree produced by IsnowParser#exclusion.
+	exitExclusion(ctx) {
+	}
+
+
 	// Enter a parse tree produced by IsnowParser#spec.
 	enterSpec(ctx) {
 	}

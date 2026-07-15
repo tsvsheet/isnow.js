@@ -42,7 +42,7 @@ function parseTree(src) {
 /**
  * parseRaw parses src into the raw AST, or throws IsnowError('syntax').
  * @param {string} src
- * @returns {{ groups: object[], bounds: object[], intervals: object[] }}
+ * @returns {{ groups: object[], bounds: object[], intervals: object[], exclusions: object[][] }}
  */
 export function parseRaw(src) {
   const { tree, ok } = parseTree(src);
@@ -50,7 +50,15 @@ export function parseRaw(src) {
     fail(CODES.SYNTAX);
   }
   const { groups, intervals } = extractIntervals(specGroups(tree.spec()));
-  return { groups, bounds: tree.bound().map(bound), intervals };
+  return { groups, bounds: tree.bound().map(bound), intervals, exclusions: tree.exclusion().map(exclusion) };
+}
+
+/**
+ * exclusion lifts one `! <spec>` clause's sub-spec into its groups. Absent time
+ * fields default to wildcard downstream, so `! 12/25` carves out all of Dec 25.
+ */
+function exclusion(ctx) {
+  return specGroups(ctx.spec());
 }
 
 /**

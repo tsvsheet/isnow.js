@@ -213,6 +213,47 @@ test('errors: interval domain (descending and zero)', () => {
   parseCode('+[99999999999999999999s]', CODES.RANGE); // overflow magnitude fails positive()
 });
 
+// -- exclusions: pattern-level `! <spec>` carve-outs (exclusion.js) ----------
+
+test('canonical: exclusions render after the main form, bounds', () => {
+  canon('M-F ! 12/25', '*/*/* Monday-Friday *:*:00 ! */12/25 * *:*:*'); // absent time => wildcard whole day
+  canon('noon ! 12/25 ! 1/1', '*/*/* * 12:00:00 ! */12/25 * *:*:* ! */01/01 * *:*:*'); // holiday list
+  canon('M-F !12/25', '*/!12/25 Monday-Friday *:*:00'); // no separator => field exclusion, not pattern-level
+});
+
+test('canonical: an exclusion canonical form is a fixed point', () => {
+  for (const src of ['M-F ! 12/25', 'noon ! 12/25 ! 1/1']) {
+    const c = parse(src).canonical;
+    assert.equal(parse(c).canonical, c, `fixed point ${src}`);
+  }
+});
+
+test('holds: a pattern-level exclusion carves out its whole matching period', () => {
+  holds('M-F ! 12/25', '2026-12-25T12:00:00Z', false); // Christmas is a weekday but excluded
+  holds('M-F ! 12/25', '2026-12-25T23:59:00Z', false); // whole day excluded, not just midnight
+  holds('M-F ! 12/25', '2026-12-24T12:00:00Z', true); // an ordinary weekday still holds
+  holds('noon ! 12/25 ! 1/1', '2027-01-01T12:00:00Z', false); // second holiday in the list
+  holds('noon ! 12/25 ! 1/1', '2027-01-02T12:00:00Z', true); // outside every exclusion
+  holds('M-F !12/25', '2026-12-25T12:00:00Z', false); // field exclusion `!12` drops December's 25th
+  holds('M-F !12/25', '2026-11-25T12:00:00Z', true); // a non-December 25th on a weekday still holds
+});
+
+test('next skips an excluded holiday', () => {
+  const p = parse('noon ! 12/25');
+  let cur = '2026-12-23T00:00:00Z';
+  const got = [];
+  for (let i = 0; i < 3; i += 1) {
+    const d = p.next(cur);
+    got.push(d.toISOString());
+    cur = d;
+  }
+  assert.deepEqual(got, ['2026-12-23T12:00:00.000Z', '2026-12-24T12:00:00.000Z', '2026-12-26T12:00:00.000Z']);
+});
+
+test('errors: a step anchor must be a plain number, not a unit compound', () => {
+  parseCode('0d0+[1]', CODES.CONTEXT); // compound anchor rejected (fuzz-fix)
+});
+
 // -- bounds -----------------------------------------------------------------
 
 test('holds: bounds and windows', () => {

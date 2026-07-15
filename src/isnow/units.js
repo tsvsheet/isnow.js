@@ -11,6 +11,9 @@ export function validateUnits(raw) {
   for (const b of raw.bounds) {
     groupsUnits(b.groups);
   }
+  for (const ex of raw.exclusions) {
+    groupsUnits(ex);
+  }
 }
 
 function groupsUnits(groups) {

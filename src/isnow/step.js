@@ -134,14 +134,19 @@ function anchorNum(a) {
   if (a === null || a.star) {
     return 0;
   }
-  if (a.name !== '') {
-    fail(CODES.CONTEXT);
+  if (!isPlainNumber(a)) {
+    fail(CODES.CONTEXT); // a step anchor is a plain number, not a unit compound
   }
   const v = a.qtys[0].num;
   if (v < 0 || v > 9999) {
     fail(CODES.RANGE);
   }
   return v;
+}
+
+/** isPlainNumber reports a single unitless numeric quantity (a valid step anchor). */
+function isPlainNumber(a) {
+  return a.name === '' && a.qtys.length === 1 && a.qtys[0].unit === '';
 }
 
 export function positive(n) {

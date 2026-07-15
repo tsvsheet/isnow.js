@@ -24,6 +24,12 @@ export default class IsnowParserVisitor extends antlr4.tree.ParseTreeVisitor {
 	}
 
 
+	// Visit a parse tree produced by IsnowParser#exclusion.
+	visitExclusion(ctx) {
+	  return this.visitChildren(ctx);
+	}
+
+
 	// Visit a parse tree produced by IsnowParser#spec.
 	visitSpec(ctx) {
 	  return this.visitChildren(ctx);

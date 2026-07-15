@@ -22,15 +22,17 @@ export function exactRaw(v) {
 /**
  * mapGroups applies the ladder and returns the filled slots. secWild makes an
  * unprovided second default to wildcard (a second-grained interval owns the
- * second field) rather than to 0.
+ * second field) rather than to 0. timeWild makes every unprovided time field
+ * default to wildcard (an exclusion sub-spec excludes its whole matching period,
+ * so `! 12/25` carves out all of December 25, not just midnight).
  */
-export function mapGroups(groups, secWild) {
+export function mapGroups(groups, secWild, timeWild) {
   const s = new Array(NUM_ROLES).fill(null);
   const hasDate = groups.some((g) => g.kind === 'date');
   const hasTime = groups.some((g) => g.kind === 'time');
   assignPass(s, groups, false, hasDate && hasTime);
   assignPass(s, groups, true, hasDate && hasTime);
-  fillDefaults(s, secWild);
+  fillDefaults(s, secWild, timeWild);
   return s;
 }
 
@@ -153,21 +155,21 @@ function hourFree(s) {
 
 // --- defaults ---
 
-function fillDefaults(s, secWild) {
+function fillDefaults(s, secWild, timeWild) {
   for (const r of [ROLE.YEAR, ROLE.MONTH, ROLE.DAY, ROLE.WEEKDAY]) {
     if (s[r] === null) {
       s[r] = WILD_RAW;
     }
   }
-  fillTimeDefaults(s, secWild);
+  fillTimeDefaults(s, secWild, timeWild);
 }
 
-function fillTimeDefaults(s, secWild) {
+function fillTimeDefaults(s, secWild, timeWild) {
   const roles = [ROLE.HOUR, ROLE.MINUTE, ROLE.SECOND];
   if (!roles.some((r) => s[r] !== null)) {
     s[ROLE.HOUR] = WILD_RAW;
     s[ROLE.MINUTE] = WILD_RAW;
-    s[ROLE.SECOND] = defaultSecond(secWild);
+    s[ROLE.SECOND] = defaultSecond(secWild || timeWild);
     return;
   }
   for (const r of roles) {
@@ -177,6 +179,6 @@ function fillTimeDefaults(s, secWild) {
   }
 }
 
-function defaultSecond(secWild) {
-  return secWild ? WILD_RAW : exactRaw(0);
+function defaultSecond(wild) {
+  return wild ? WILD_RAW : exactRaw(0);
 }

@@ -16,10 +16,14 @@ import { resolveWeekday, WEEKDAY_NAMES } from './symbol.js';
  * be re-absorbed into that bound's sub-spec on round-trip.
  */
 export function renderCanonical(sl, intervals, bounds) {
+  return renderMain(sl) + renderIntervals(intervals) + renderBounds(bounds);
+}
+
+/** renderMain renders just the `Y/m/d w H:M:S` core (shared with exclusions). */
+export function renderMain(sl) {
   const date = join(sl, '/', [ROLE.YEAR, ROLE.MONTH, ROLE.DAY]);
   const tod = join(sl, ':', [ROLE.HOUR, ROLE.MINUTE, ROLE.SECOND]);
-  const main = `${date} ${fieldText(sl, ROLE.WEEKDAY)} ${tod}`;
-  return main + renderIntervals(intervals) + renderBounds(bounds);
+  return `${date} ${fieldText(sl, ROLE.WEEKDAY)} ${tod}`;
 }
 
 function join(sl, sep, roles) {

@@ -6,7 +6,7 @@
 
 import { cycle, value } from './ctx.js';
 import { CODES, fail } from './errors.js';
-import { cycleSize, DOMAINS, ROLE } from './roles.js';
+import { cycleSize, DOMAINS, NUM_ROLES, ROLE } from './roles.js';
 import { RES, resolveWeekday } from './symbol.js';
 import { setposTerm } from './setpos.js';
 import { spanStepTerm, stepTerm } from './step.js';
@@ -47,6 +47,19 @@ export function fieldHolds(spec, c) {
 /** wildcardField is the default for an absent or empty slot. */
 export function wildcardField() {
   return { exclude: false, terms: [() => true] };
+}
+
+/** compileAll compiles every role's slot into the seven-field predicate array. */
+export function compileAll(sl) {
+  const out = new Array(NUM_ROLES);
+  for (let r = 0; r < NUM_ROLES; r += 1) {
+    out[r] = compileRole(r, sl[r]);
+  }
+  return out;
+}
+
+function compileRole(r, f) {
+  return f === null || !f.present ? wildcardField() : compileField(r, f);
 }
 
 function compileTerm(r, t) {
