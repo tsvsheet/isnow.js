@@ -10,6 +10,20 @@ import { FIELDS, ROLE } from './roles.js';
 const DAY_MS = 86400000;
 
 /**
+ * utcMs is the UTC epoch-milliseconds for a proleptic-Gregorian date. Unlike
+ * `Date.UTC`, `setUTCFullYear` never remaps two-digit years (0..99) to 1900..1999
+ * and normalizes month/day using the true year's leap rules, so year 0..99
+ * dates compute the same weekday/day-of-year as Go's `time.Date` (which the Go
+ * implementation relies on). For four-digit years it is identical to `Date.UTC`.
+ */
+export function utcMs(y, mo, d, H = 0, M = 0, S = 0) {
+  const dt = new Date(0);
+  dt.setUTCFullYear(y, mo, d);
+  dt.setUTCHours(H, M, S, 0);
+  return dt.getTime();
+}
+
+/**
  * newCtx builds a context from wall-clock fields.
  * @param {{ y: number, m: number, d: number, H: number, M: number, S: number }} w
  */
@@ -18,7 +32,7 @@ export function newCtx(w) {
   return {
     year: w.y, month: w.m, day: w.d,
     hour: w.H, minute: w.M, second: w.S,
-    weekday: new Date(Date.UTC(w.y, w.m - 1, w.d)).getUTCDay() + 1,
+    weekday: new Date(utcMs(w.y, w.m - 1, w.d)).getUTCDay() + 1,
     daysInMonth: dim,
     dayOfYear: dayOfYear(w.y, w.m, w.d),
     occ: Math.floor((w.d - 1) / 7) + 1,
@@ -27,11 +41,11 @@ export function newCtx(w) {
 }
 
 export function daysInMonth(year, month) {
-  return new Date(Date.UTC(year, month, 0)).getUTCDate();
+  return new Date(utcMs(year, month, 0)).getUTCDate();
 }
 
 function dayOfYear(year, month, day) {
-  return Math.floor((Date.UTC(year, month - 1, day) - Date.UTC(year, 0, 1)) / DAY_MS) + 1;
+  return Math.floor((utcMs(year, month - 1, day) - utcMs(year, 0, 1)) / DAY_MS) + 1;
 }
 
 /** value returns the field value for a role. */

@@ -8,7 +8,7 @@
 import { boundSatisfied, compileBounds } from './bound.js';
 import { compileAll, fieldHolds } from './compile.js';
 import { compileExclusions, excludes, renderExclusions } from './exclusion.js';
-import { newCtx, withValue } from './ctx.js';
+import { newCtx, withValue, utcMs } from './ctx.js';
 import { renderExplain } from './explain.js';
 import { compileIntervals, hasSecondInterval, intervalHolds } from './interval.js';
 import { mapGroups } from './ladder.js';
@@ -162,7 +162,7 @@ function beyondHorizon(day, from, horizonYear, forward) {
 }
 
 function addDays(day, delta) {
-  const d = new Date(Date.UTC(day.y, day.m - 1, day.d + delta));
+  const d = new Date(utcMs(day.y, day.m - 1, day.d + delta));
   return { y: d.getUTCFullYear(), m: d.getUTCMonth() + 1, d: d.getUTCDate() };
 }
 

@@ -24,6 +24,9 @@ function endpointWeekday(a) {
   if (a.name !== '') {
     return singleWeekday(a.name);
   }
+  if (a.star || a.qtys.length === 0) {
+    fail(CODES.CONTEXT); // a weekday-span endpoint must be a name or a number
+  }
   const v = a.qtys[0].num;
   inDomain(ROLE.WEEKDAY, v);
   return v;

@@ -7,6 +7,7 @@
  */
 
 import { CODES, fail } from './errors.js';
+import { utcMs } from './ctx.js';
 
 const RFC3339 = /^(\d{4})-(\d{2})-(\d{2})[Tt ](\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(Z|z|[+-]\d{2}:?\d{2})?$/u;
 const MIN_MS = 60000;
@@ -23,7 +24,7 @@ class FixedZone {
   }
 
   instantFromWall(w) {
-    return Date.UTC(w.y, w.m - 1, w.d, w.H, w.M, w.S) - this.offsetMin * MIN_MS;
+    return utcMs(w.y, w.m - 1, w.d, w.H, w.M, w.S) - this.offsetMin * MIN_MS;
   }
 }
 
@@ -46,9 +47,9 @@ class IntlZone {
   }
 
   instantFromWall(w) {
-    const guess = Date.UTC(w.y, w.m - 1, w.d, w.H, w.M, w.S);
+    const guess = utcMs(w.y, w.m - 1, w.d, w.H, w.M, w.S);
     const back = this.wallFromInstant(guess);
-    const offset = Date.UTC(back.y, back.m - 1, back.d, back.H, back.M, back.S) - guess;
+    const offset = utcMs(back.y, back.m - 1, back.d, back.H, back.M, back.S) - guess;
     return guess - offset;
   }
 }
