@@ -144,7 +144,7 @@ function anchorNum(a) {
   return v;
 }
 
-function positive(n) {
+export function positive(n) {
   if (n < 1) {
     fail(CODES.RANGE);
   }

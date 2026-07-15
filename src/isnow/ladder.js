@@ -19,14 +19,18 @@ export function exactRaw(v) {
   };
 }
 
-/** mapGroups applies the ladder and returns the filled slots. */
-export function mapGroups(groups) {
+/**
+ * mapGroups applies the ladder and returns the filled slots. secWild makes an
+ * unprovided second default to wildcard (a second-grained interval owns the
+ * second field) rather than to 0.
+ */
+export function mapGroups(groups, secWild) {
   const s = new Array(NUM_ROLES).fill(null);
   const hasDate = groups.some((g) => g.kind === 'date');
   const hasTime = groups.some((g) => g.kind === 'time');
   assignPass(s, groups, false, hasDate && hasTime);
   assignPass(s, groups, true, hasDate && hasTime);
-  fillDefaults(s);
+  fillDefaults(s, secWild);
   return s;
 }
 
@@ -149,21 +153,21 @@ function hourFree(s) {
 
 // --- defaults ---
 
-function fillDefaults(s) {
+function fillDefaults(s, secWild) {
   for (const r of [ROLE.YEAR, ROLE.MONTH, ROLE.DAY, ROLE.WEEKDAY]) {
     if (s[r] === null) {
       s[r] = WILD_RAW;
     }
   }
-  fillTimeDefaults(s);
+  fillTimeDefaults(s, secWild);
 }
 
-function fillTimeDefaults(s) {
+function fillTimeDefaults(s, secWild) {
   const roles = [ROLE.HOUR, ROLE.MINUTE, ROLE.SECOND];
   if (!roles.some((r) => s[r] !== null)) {
     s[ROLE.HOUR] = WILD_RAW;
     s[ROLE.MINUTE] = WILD_RAW;
-    s[ROLE.SECOND] = exactRaw(0);
+    s[ROLE.SECOND] = defaultSecond(secWild);
     return;
   }
   for (const r of roles) {
@@ -171,4 +175,8 @@ function fillTimeDefaults(s) {
       s[r] = exactRaw(0);
     }
   }
+}
+
+function defaultSecond(secWild) {
+  return secWild ? WILD_RAW : exactRaw(0);
 }

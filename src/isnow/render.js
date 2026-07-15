@@ -5,15 +5,21 @@
  */
 
 import { classifyTerm, KIND } from './compile.js';
+import { renderIntervals } from './interval.js';
 import { ROLE } from './roles.js';
 import { resolveWeekday, WEEKDAY_NAMES } from './symbol.js';
 
-/** renderCanonical renders the seven-field form plus appended bounds. */
-export function renderCanonical(sl, bounds) {
+/**
+ * renderCanonical renders the seven-field `Y/m/d w H:M:S` form, then any
+ * intervals (they are main-spec groups, so they precede bounds), then bounds.
+ * The interval must render before the bounds — an interval after a bound would
+ * be re-absorbed into that bound's sub-spec on round-trip.
+ */
+export function renderCanonical(sl, intervals, bounds) {
   const date = join(sl, '/', [ROLE.YEAR, ROLE.MONTH, ROLE.DAY]);
   const tod = join(sl, ':', [ROLE.HOUR, ROLE.MINUTE, ROLE.SECOND]);
   const main = `${date} ${fieldText(sl, ROLE.WEEKDAY)} ${tod}`;
-  return main + renderBounds(bounds);
+  return main + renderIntervals(intervals) + renderBounds(bounds);
 }
 
 function join(sl, sep, roles) {

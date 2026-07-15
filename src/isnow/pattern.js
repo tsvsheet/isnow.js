@@ -9,6 +9,7 @@ import { boundSatisfied, compileBounds } from './bound.js';
 import { compileField, fieldHolds, wildcardField } from './compile.js';
 import { newCtx, withValue } from './ctx.js';
 import { renderExplain } from './explain.js';
+import { compileIntervals, hasSecondInterval, intervalHolds } from './interval.js';
 import { mapGroups } from './ladder.js';
 import { parseRaw } from './ast.js';
 import { renderCanonical } from './render.js';
@@ -21,9 +22,10 @@ const DATE_ROLES = [ROLE.YEAR, ROLE.MONTH, ROLE.DAY, ROLE.WEEKDAY];
 
 /** Pattern is immutable; obtain one from parse(). */
 export class Pattern {
-  constructor(fields, bounds, canon, explanation, timeZone) {
+  constructor(fields, bounds, intervals, canon, explanation, timeZone) {
     this._fields = fields;
     this._bounds = bounds;
+    this._intervals = intervals;
     this._canon = canon;
     this._explanation = explanation;
     this._timeZone = timeZone;
@@ -60,7 +62,7 @@ export class Pattern {
 
   _holdsWall(wall) {
     const c = newCtx(wall);
-    return this._fieldsHold(c) && this._boundsHold(c);
+    return this._fieldsHold(c) && this._boundsHold(c) && this._intervalsHold(c);
   }
 
   _fieldsHold(c) {
@@ -69,6 +71,10 @@ export class Pattern {
 
   _boundsHold(c) {
     return this._bounds.every((b) => boundSatisfied(b, c));
+  }
+
+  _intervalsHold(c) {
+    return this._intervals.every((iv) => intervalHolds(iv, c));
   }
 
   _dateHolds(c) {
@@ -163,10 +169,11 @@ function addDays(day, delta) {
 export function parse(src, options = {}) {
   const raw = parseRaw(src);
   validateUnits(raw);
-  const sl = mapGroups(raw.groups);
+  const sl = mapGroups(raw.groups, hasSecondInterval(raw.intervals));
   const fields = compileAll(sl);
   const bounds = compileBounds(raw.bounds);
-  return new Pattern(fields, bounds, renderCanonical(sl, bounds), renderExplain(sl, bounds), options.timeZone);
+  const intervals = compileIntervals(raw.intervals);
+  return new Pattern(fields, bounds, intervals, renderCanonical(sl, intervals, bounds), renderExplain(sl, bounds), options.timeZone);
 }
 
 function compileAll(sl) {

@@ -51,7 +51,7 @@ function compileBound(b) {
   if (fields.length === 0) {
     fail(CODES.CONTEXT); // a bound must constrain something
   }
-  return { op: b.op, fields, text: renderCanonical(sl, []) };
+  return { op: b.op, fields, text: renderCanonical(sl, [], []) };
 }
 
 function mapBoundGroups(groups) {

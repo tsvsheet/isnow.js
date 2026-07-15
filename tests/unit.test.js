@@ -158,6 +158,61 @@ test('holds: setpos business days', () => {
   holds('*/*/* 2-6-[1] 12:00', '2026-02-26T12:00:00Z', false);
 });
 
+// -- intervals: "every N units" periodic recurrences (interval.js) -----------
+
+test('canonical: intervals render after the main form, before bounds', () => {
+  canon('+[90mn]', '*/*/* * *:*:00 +[90mn]');
+  canon('+[25h]', '*/*/* * *:*:00 +[25h]');
+  canon('+[10d]', '*/*/* * *:*:00 +[10d]');
+  canon('+[30s]', '*/*/* * *:*:* +[30s]'); // a second-grained interval frees the second field
+  canon('M-F +[90mn] >=6 <=18', '*/*/* Monday-Friday *:*:00 +[90mn] >=*/*/* * 06:00:00 <=*/*/* * 18:00:00');
+});
+
+test('canonical: an interval canonical form is a fixed point', () => {
+  for (const src of ['+[90mn]', '+[25h]', '+[10d]', '+[30s]', 'M-F +[90mn] >=6 <=18']) {
+    const c = parse(src).canonical;
+    assert.equal(parse(c).canonical, c, `fixed point ${src}`);
+  }
+});
+
+test('holds: interval grid by grain', () => {
+  holds('+[90mn]', '2026-07-14T00:00:00Z', true); // epoch-aligned at midnight
+  holds('+[90mn]', '2026-07-14T01:30:00Z', true); // 90 minutes later
+  holds('+[90mn]', '2026-07-14T01:00:00Z', false); // on the hour is off the 90-min grid
+  holds('+[90mn]', '2026-07-14T00:00:30Z', false); // finer-than-minute field must be 0
+  holds('+[25h]', '2026-07-14T23:00:00Z', true); // 25h grid drifts across days
+  holds('+[25h]', '2026-07-14T23:30:00Z', false); // minute must be 0 for an hour grain
+  holds('+[10d]', '2026-07-16T00:00:00Z', true); // a tenth day from the epoch, at midnight
+  holds('+[10d]', '2026-07-16T01:00:00Z', false); // whole time must be 00:00:00 for a day grain
+  holds('+[10d]', '2026-07-15T00:00:00Z', false); // off the 10-day grid
+  holds('+[30s]', '2026-07-14T09:00:30Z', true);
+  holds('+[30s]', '2026-07-14T09:00:15Z', false);
+});
+
+test('holds: an interval is ANDed with fields and bounds', () => {
+  holds('M-F +[90mn] >=6 <=18', '2026-07-14T07:30:00Z', true); // Tuesday, within window, on grid
+  holds('M-F +[90mn] >=6 <=18', '2026-07-18T07:30:00Z', false); // Saturday fails the weekday
+  holds('M-F +[90mn] >=6 <=18', '2026-07-14T07:00:00Z', false); // within window but off the grid
+});
+
+test('holds: daysFromCivil spans the negative era (proleptic Gregorian)', () => {
+  // year 0 with month <= 2 drives the civil year to -1, exercising eraOf's
+  // negative-era branch (a faithful port of Hinnant's algorithm).
+  holds('+[1d]', '0000-02-01T00:00:00Z', true); // every day trivially lands on a day-grain midnight
+});
+
+test('next / prev derive interval occurrences', () => {
+  assert.equal(nextIso('+[25h]', '2026-07-14T00:00:00Z'), '2026-07-14T23:00:00.000Z');
+  assert.equal(nextIso('+[10d]', '2026-07-14T00:00:00Z'), '2026-07-16T00:00:00.000Z');
+  assert.equal(prevIso('+[10d]', '2026-07-16T00:00:01Z'), '2026-07-16T00:00:00.000Z');
+});
+
+test('errors: interval domain (descending and zero)', () => {
+  parseCode('-[90mn]', CODES.CONTEXT); // a descending interval is meaningless
+  parseCode('+[0mn]', CODES.RANGE); // N must be >= 1
+  parseCode('+[99999999999999999999s]', CODES.RANGE); // overflow magnitude fails positive()
+});
+
 // -- bounds -----------------------------------------------------------------
 
 test('holds: bounds and windows', () => {

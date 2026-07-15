@@ -10,6 +10,7 @@ import antlr4 from 'antlr4';
 import IsnowLexer from '../isnowgrammar/IsnowLexer.js';
 import IsnowParser from '../isnowgrammar/IsnowParser.js';
 import { CODES, fail } from './errors.js';
+import { isIntervalUnit } from './interval.js';
 
 const GROUP_KIND = Object.freeze({ DATE: 'date', TIME: 'time', BARE: 'bare' });
 const BOUND_OP = Object.freeze({ GE: 'ge', GT: 'gt', LE: 'le', LT: 'lt' });
@@ -41,14 +42,58 @@ function parseTree(src) {
 /**
  * parseRaw parses src into the raw AST, or throws IsnowError('syntax').
  * @param {string} src
- * @returns {{ groups: object[], bounds: object[] }}
+ * @returns {{ groups: object[], bounds: object[], intervals: object[] }}
  */
 export function parseRaw(src) {
   const { tree, ok } = parseTree(src);
   if (!ok) {
     fail(CODES.SYNTAX);
   }
-  return { groups: specGroups(tree.spec()), bounds: tree.bound().map(bound) };
+  const { groups, intervals } = extractIntervals(specGroups(tree.spec()));
+  return { groups, bounds: tree.bound().map(bound), intervals };
+}
+
+/**
+ * extractIntervals pulls the bare interval groups (`+[90mn]`, `+[10d]`, …) out
+ * of the group list so they become pattern-level periodic constraints rather
+ * than field terms (mirrors isnow.go/parse.go). Intervals thus bypass the
+ * field-unit validation the remaining groups still undergo.
+ */
+function extractIntervals(groups) {
+  const kept = [];
+  const intervals = [];
+  for (const gr of groups) {
+    const incr = intervalOf(gr);
+    if (incr === null) {
+      kept.push(gr);
+    } else {
+      intervals.push(incr);
+    }
+  }
+  return { groups: kept, intervals };
+}
+
+/**
+ * intervalOf returns the interval increment if gr is a bare group holding a
+ * single incr-only term with an interval unit (s/mn/h/d), else null.
+ */
+function intervalOf(gr) {
+  if (gr.kind !== GROUP_KIND.BARE) {
+    return null;
+  }
+  const t = soleIncrTerm(gr.slots[0]);
+  return t !== null && isIntervalUnit(t.incr.qtys[0].unit) ? t.incr : null;
+}
+
+function soleIncrTerm(f) {
+  if (!f.present || f.exclude || f.terms.length !== 1) {
+    return null;
+  }
+  const t = f.terms[0];
+  if (t.lo !== null || t.incr === null || t.incr.qtys.length !== 1) {
+    return null;
+  }
+  return t;
 }
 
 function bound(ctx) {
