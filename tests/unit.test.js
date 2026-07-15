@@ -175,18 +175,64 @@ test('canonical: an interval canonical form is a fixed point', () => {
   }
 });
 
-test('holds: interval grid by grain', () => {
-  holds('+[90mn]', '2026-07-14T00:00:00Z', true); // epoch-aligned at midnight
+test('holds: day container — sub-day strides re-align at midnight', () => {
+  holds('+[90mn]', '2026-07-14T00:00:00Z', true); // midnight, start of the day container
   holds('+[90mn]', '2026-07-14T01:30:00Z', true); // 90 minutes later
+  holds('+[90mn]', '2026-07-14T22:30:00Z', true); // 1350 = 90 × 15
   holds('+[90mn]', '2026-07-14T01:00:00Z', false); // on the hour is off the 90-min grid
+  holds('+[90mn]', '2026-07-14T02:00:00Z', false); // 120 mod 90 = 30
   holds('+[90mn]', '2026-07-14T00:00:30Z', false); // finer-than-minute field must be 0
-  holds('+[25h]', '2026-07-14T23:00:00Z', true); // 25h grid drifts across days
-  holds('+[25h]', '2026-07-14T23:30:00Z', false); // minute must be 0 for an hour grain
-  holds('+[10d]', '2026-07-16T00:00:00Z', true); // a tenth day from the epoch, at midnight
-  holds('+[10d]', '2026-07-16T01:00:00Z', false); // whole time must be 00:00:00 for a day grain
-  holds('+[10d]', '2026-07-15T00:00:00Z', false); // off the 10-day grid
+  holds('+[2h]', '2026-07-14T22:00:00Z', true); // 22 mod 2 = 0
+  holds('+[2h]', '2026-07-14T23:00:00Z', false); // odd hour
+  holds('+[2h]', '2026-07-14T02:30:00Z', false); // minute must be 0 for an hour grain
   holds('+[30s]', '2026-07-14T09:00:30Z', true);
   holds('+[30s]', '2026-07-14T09:00:15Z', false);
+});
+
+test('holds: hour container — 60 minutes fills it exactly (hourly)', () => {
+  holds('+[60mn]', '2026-07-14T09:00:00Z', true); // top of the hour
+  holds('+[60mn]', '2026-07-14T10:00:00Z', true);
+  holds('+[60mn]', '2026-07-14T09:30:00Z', false); // minute-of-hour 30, off the grid
+});
+
+test('holds: a stride over a year re-aligns annually (Jan 1 only)', () => {
+  holds('+[400d]', '2026-01-01T00:00:00Z', true);
+  holds('+[400d]', '2027-01-01T00:00:00Z', true);
+  holds('+[400d]', '2026-06-01T00:00:00Z', false);
+});
+
+test('holds: week container — Sunday-start, day/hour strides', () => {
+  // +[3d] fires on weekdays {Sun, Wed, Sat} and re-aligns every Sunday.
+  holds('+[3d]', '2026-07-12T00:00:00Z', true); // Sunday
+  holds('+[3d]', '2026-07-15T00:00:00Z', true); // Wednesday
+  holds('+[3d]', '2026-07-18T00:00:00Z', true); // Saturday
+  holds('+[3d]', '2026-07-19T00:00:00Z', true); // next Sunday — re-aligned
+  holds('+[3d]', '2026-07-14T00:00:00Z', false); // Tuesday
+  holds('+[3d]', '2026-07-12T06:00:00Z', false); // right weekday, wrong time-of-day
+  // +[25h] draws a diagonal across the week: hour-of-week ≡ 0 mod 25.
+  holds('+[25h]', '2026-07-12T00:00:00Z', true); // Sun 00:00 (0)
+  holds('+[25h]', '2026-07-13T01:00:00Z', true); // Mon 01:00 (25)
+  holds('+[25h]', '2026-07-16T04:00:00Z', true); // Thu 04:00 (100)
+  holds('+[25h]', '2026-07-14T00:00:00Z', false); // Tue 00:00 (48)
+  holds('+[25h]', '2026-07-14T02:30:00Z', false); // minute must be 0 for an hour grain
+});
+
+test('holds: month container — day strides 8..31 re-align on the 1st', () => {
+  holds('+[10d]', '2026-07-01T00:00:00Z', true); // day 1
+  holds('+[10d]', '2026-07-11T00:00:00Z', true); // day 11
+  holds('+[10d]', '2026-07-31T00:00:00Z', true); // 31-day month reaches the 31st
+  holds('+[10d]', '2026-08-01T00:00:00Z', true); // re-aligned on the next 1st
+  holds('+[10d]', '2026-07-16T00:00:00Z', false); // day 16
+  holds('+[10d]', '2026-02-28T00:00:00Z', false); // short February never reaches day 31
+  holds('+[10d]', '2026-07-11T12:00:00Z', false); // whole time must be 00:00:00
+});
+
+test('holds: year container — day strides > 31 re-align on Jan 1', () => {
+  holds('+[40d]', '2026-01-01T00:00:00Z', true); // day-of-year 1
+  holds('+[40d]', '2026-02-10T00:00:00Z', true); // day-of-year 41
+  holds('+[40d]', '2027-01-01T00:00:00Z', true); // re-aligned on the next Jan 1
+  holds('+[40d]', '2026-12-31T00:00:00Z', false); // day-of-year 365
+  holds('+[40d]', '2024-02-10T00:00:00Z', true); // stable across the 2024 leap year
 });
 
 test('holds: an interval is ANDed with fields and bounds', () => {
@@ -195,16 +241,16 @@ test('holds: an interval is ANDed with fields and bounds', () => {
   holds('M-F +[90mn] >=6 <=18', '2026-07-14T07:00:00Z', false); // within window but off the grid
 });
 
-test('holds: daysFromCivil spans the negative era (proleptic Gregorian)', () => {
-  // year 0 with month <= 2 drives the civil year to -1, exercising eraOf's
-  // negative-era branch (a faithful port of Hinnant's algorithm).
-  holds('+[1d]', '0000-02-01T00:00:00Z', true); // every day trivially lands on a day-grain midnight
+test('holds: +[1d] holds every midnight, including a proleptic-calendar edge', () => {
+  holds('+[1d]', '2026-07-14T00:00:00Z', true); // week container, stride 1 → any midnight
+  holds('+[1d]', '2026-07-14T00:00:01Z', false);
+  holds('+[1d]', '0001-01-01T00:00:00Z', true); // weekday/day-of-year resolve at year 1
 });
 
-test('next / prev derive interval occurrences', () => {
-  assert.equal(nextIso('+[25h]', '2026-07-14T00:00:00Z'), '2026-07-14T23:00:00.000Z');
-  assert.equal(nextIso('+[10d]', '2026-07-14T00:00:00Z'), '2026-07-16T00:00:00.000Z');
-  assert.equal(prevIso('+[10d]', '2026-07-16T00:00:01Z'), '2026-07-16T00:00:00.000Z');
+test('next / prev derive interval occurrences (civil-anchored)', () => {
+  assert.equal(nextIso('+[25h]', '2026-07-14T00:00:00Z'), '2026-07-14T02:00:00.000Z');
+  assert.equal(nextIso('+[10d]', '2026-07-14T00:00:00Z'), '2026-07-21T00:00:00.000Z');
+  assert.equal(prevIso('+[10d]', '2026-07-21T00:00:01Z'), '2026-07-21T00:00:00.000Z');
 });
 
 test('errors: interval domain (descending and zero)', () => {
