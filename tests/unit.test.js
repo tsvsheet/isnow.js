@@ -76,6 +76,8 @@ test('canonical: symbols', () => {
   canon('n', '*/*/* * 12:00:00');
   canon('M', '*/*/* Monday *:*:00');
   canon('*/*/* 7 12:00', '*/*/* Saturday 12:00:00');
+  canon('*/*/* 2-6 12:00', '*/*/* Monday-Friday 12:00:00'); // numeric weekday span renders as names
+  canon('*/*/* 2+[1] 12:00', '*/*/* 2+[1] 12:00:00'); // numeric weekday step anchor stays numeric
 });
 
 test('canonical: algebra shapes render verbatim', () => {
@@ -140,6 +142,20 @@ test('holds: steps (arithmetic, occurrence, week)', () => {
   holds('M+[1],W+[2] noon', '2026-01-14T12:00:00Z', true);
   holds('2000+[4]// noon', '2004-06-01T12:00:00Z', true); // open year progression
   holds('2000+[4]// noon', '2005-06-01T12:00:00Z', false);
+  holds('8-12+[2]', '2026-07-14T10:00:00Z', true); // non-weekday span-step: hours 8,10,12
+  holds('8-12+[2]', '2026-07-14T09:00:00Z', false);
+});
+
+// -- setpos: BYSETPOS over a weekday span (M-F-[1] = last business day) -------
+
+test('holds: setpos business days', () => {
+  holds('M-F-[1] noon', '2026-02-27T12:00:00Z', true); // Feb 2026 last business day (Fri 27th)
+  holds('M-F-[1] noon', '2026-02-28T12:00:00Z', false); // Saturday is outside the span
+  holds('M-F-[1] noon', '2026-02-26T12:00:00Z', false); // an earlier weekday is not the last
+  holds('M-F+[1] noon', '2026-03-02T12:00:00Z', true); // Mar 2026 first business day (Mon 2nd)
+  holds('M-F+[1] noon', '2026-03-03T12:00:00Z', false);
+  holds('*/*/* 2-6-[1] 12:00', '2026-02-27T12:00:00Z', true); // numeric weekday endpoints (2-6 = Mon-Fri)
+  holds('*/*/* 2-6-[1] 12:00', '2026-02-26T12:00:00Z', false);
 });
 
 // -- bounds -----------------------------------------------------------------
@@ -260,7 +276,18 @@ test('errors: symbol', () => {
 });
 
 test('errors: range', () => {
-  for (const src of ['25', ':61', '/13/ *:*:00', '2016-2011// *:*:00', '12 >=25', '::+[0]', '25-30', '25-30+[2]', '8-25', '8-12+[0]', '*/*/1+[0w] noon', ':99999+[2]']) {
+  const cases = [
+    '25', ':61', '/13/ *:*:00', '2016-2011// *:*:00', '12 >=25', '::+[0]', '25-30', '25-30+[2]',
+    '8-25', '8-12+[0]', '*/*/1+[0w] noon', ':99999+[2]',
+    // v0.2 silent-wrong guards (semantics.md §Algebra):
+    ':0+[90]', '0+[25]', // step stride must be < the field cycle
+    '*/*/-40 *:*:00', '*/*/-0 *:*:00', // from-end tail must be 1..cycle (day 40 > 31, day 0 < 1)
+    'Monday+[0] noon', 'Monday+[6] noon', // weekday-occurrence index 1..5
+    '*/*/+[99w] noon', '*/*/5+[3w] noon', // week stride 1..53 with anchor < stride
+    ':0+[99999999999999999999]', '/-99999999999999999999', // overflow magnitude fails every range check
+    'M-F+[99] noon', '*/*/* 2-9-[1] 12:00', // setpos index 1..31 and a numeric endpoint out of the weekday domain
+  ];
+  for (const src of cases) {
     parseCode(src, CODES.RANGE);
   }
 });
@@ -271,6 +298,7 @@ test('errors: context', () => {
     '/// noon', '::: noon', '2000// 2001// noon', 'M/1 noon', 'M-F/1 noon', '*/*/-2-5 noon',
     '12 <:0', '12 <::0', '12 <6::0', '-*', ':M+[2]', ':+[3w]', '*/*/M+[3w] noon', '0-A', 'M-5 noon',
     '+[4]// noon', '2000-[2]// noon', '-1// noon >=2011 <=2015', 'noon >=*',
+    'noon >=*/*/-*', // a from-end wildcard inside a bound is not a plain wildcard
   ];
   for (const src of cases) {
     parseCode(src, CODES.CONTEXT);

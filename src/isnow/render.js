@@ -65,7 +65,15 @@ function renderSpan(r, t) {
 }
 
 function renderEndpoint(r, a) {
-  return a.name !== '' ? weekdayNamesOf(a.name)[0] : pad(r, a.qtys[0].num);
+  if (a.name !== '') {
+    return weekdayNamesOf(a.name)[0];
+  }
+  // A numeric weekday span endpoint renders as its full name (2-6 => Monday-Friday);
+  // a numeric weekday step anchor (renderAnchor) stays numeric — it is arithmetic.
+  if (r === ROLE.WEEKDAY) {
+    return capitalize(WEEKDAY_NAMES[a.qtys[0].num]);
+  }
+  return pad(r, a.qtys[0].num);
 }
 
 function renderStep(r, t) {

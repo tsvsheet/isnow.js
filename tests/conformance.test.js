@@ -65,6 +65,7 @@ function checkDerive(c) {
 }
 
 function deriveN(p, from, n, forward) {
+  const offset = offsetOf(from);
   const out = [];
   let cur = from;
   while (out.length < n) {
@@ -73,7 +74,31 @@ function deriveN(p, from, n, forward) {
       break;
     }
     out.push(next.getTime());
-    cur = next;
+    // A JS Date carries no zone, so re-encode the fixed offset for the next step
+    // — mirrors Go's time.Time threading its Location through each Next/Prev.
+    cur = withOffset(next.getTime(), offset);
   }
   return out;
+}
+
+function offsetOf(from) {
+  const m = /(Z|[+-]\d{2}:?\d{2})$/u.exec(from);
+  return m === null ? 'Z' : m[1];
+}
+
+function offsetMinutes(offset) {
+  if (offset === 'Z') {
+    return 0;
+  }
+  const s = offset.replace(':', '');
+  const sign = s[0] === '-' ? -1 : 1;
+  return sign * (Number.parseInt(s.slice(1, 3), 10) * 60 + Number.parseInt(s.slice(3, 5), 10));
+}
+
+function withOffset(ms, offset) {
+  const d = new Date(ms + offsetMinutes(offset) * 60000);
+  const p = (n, w = 2) => String(n).padStart(w, '0');
+  const date = `${p(d.getUTCFullYear(), 4)}-${p(d.getUTCMonth() + 1)}-${p(d.getUTCDate())}`;
+  const time = `${p(d.getUTCHours())}:${p(d.getUTCMinutes())}:${p(d.getUTCSeconds())}`;
+  return `${date}T${time}${offset}`;
 }

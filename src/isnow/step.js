@@ -7,7 +7,7 @@
 
 import { cycle, value } from './ctx.js';
 import { CODES, fail } from './errors.js';
-import { ROLE } from './roles.js';
+import { cycleSize, ROLE } from './roles.js';
 import { RES, resolveWeekday } from './symbol.js';
 import { contains, spanTerm } from './compile.js';
 
@@ -33,12 +33,23 @@ function occurrenceTerm(name, incr) {
     fail(CODES.SYMBOL);
   }
   const ks = incr.qtys.map((q) => q.num);
+  occurrenceIndices(ks);
   return (c) => {
     if (!contains(set, c.weekday)) {
       return false;
     }
     return contains(ks, incr.fromEnd ? c.occFromEnd : c.occ);
   };
+}
+
+// occurrenceIndices validates weekday-occurrence selectors: a month holds at
+// most five of any weekday, so the index must be 1..5.
+function occurrenceIndices(ks) {
+  for (const k of ks) {
+    if (k < 1 || k > 5) {
+      fail(CODES.RANGE);
+    }
+  }
 }
 
 // weekStepTerm matches days whose zero-based week-of-year index is anchor mod N.
@@ -48,14 +59,36 @@ function weekStepTerm(r, anchor, incr) {
   }
   const a = anchorNum(anchor);
   const n = positive(incr.qtys[0].num);
+  if (a >= n || n > WEEKS_PER_YEAR) {
+    fail(CODES.RANGE); // a week stride must be 1..53 and larger than its anchor
+  }
   return (c) => mod(Math.floor((c.dayOfYear - 1) / 7) - a, n) === 0;
 }
+
+// WEEKS_PER_YEAR caps a week-granular step; a year spans at most 53 week buckets.
+const WEEKS_PER_YEAR = 53;
 
 /** arithStepTerm matches an arithmetic progression from the anchor or cycle edge. */
 export function arithStepTerm(r, anchor, incr) {
   const { a, elided } = anchorOrElided(r, anchor, incr.fromEnd);
   const ns = incr.qtys.map((q) => positive(q.num));
+  boundedStrides(r, ns);
   return (c) => anyStep(c, r, a, elided, incr.fromEnd, ns);
+}
+
+// boundedStrides rejects a field-local stride that cannot progress within its
+// cycle (stride >= cycle collapses to the anchor). Cross-cycle periods use a
+// unit step instead. Year steps are open progressions (cycle 0 = no guard).
+function boundedStrides(r, ns) {
+  const cs = cycleSize(r);
+  if (cs === 0) {
+    return;
+  }
+  for (const n of ns) {
+    if (n >= cs) {
+      fail(CODES.RANGE);
+    }
+  }
 }
 
 function anyStep(c, r, anchor, elided, fromEnd, ns) {
@@ -118,7 +151,7 @@ function positive(n) {
   return n;
 }
 
-function mod(a, n) {
+export function mod(a, n) {
   return ((a % n) + n) % n;
 }
 

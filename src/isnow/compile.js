@@ -6,8 +6,9 @@
 
 import { cycle, value } from './ctx.js';
 import { CODES, fail } from './errors.js';
-import { DOMAINS, ROLE } from './roles.js';
+import { cycleSize, DOMAINS, ROLE } from './roles.js';
 import { RES, resolveWeekday } from './symbol.js';
+import { setposTerm } from './setpos.js';
 import { spanStepTerm, stepTerm } from './step.js';
 
 export const KIND = Object.freeze({
@@ -59,7 +60,9 @@ function compileTerm(r, t) {
     case KIND.SPAN:
       return spanTerm(r, t);
     case KIND.SPAN_STEP:
-      return spanStepTerm(r, t);
+      // A weekday span-step is BYSETPOS (M-F-[1] = last business day), not an
+      // arithmetic progression over the weekday cycle.
+      return r === ROLE.WEEKDAY ? setposTerm(t) : spanStepTerm(r, t);
     default:
       return exactTerm(r, t.lo);
   }
@@ -114,7 +117,7 @@ function weekdaySpanTerm(r, t) {
   return boundedSpan(ROLE.WEEKDAY, singleWeekday(t.lo.name), singleWeekday(t.hi.name));
 }
 
-function singleWeekday(name) {
+export function singleWeekday(name) {
   const { set, res } = resolveWeekday(name);
   if (res !== RES.ONE || set.length !== 1) {
     fail(CODES.SYMBOL);
@@ -140,6 +143,9 @@ function fromEndTerm(r, t) {
     fail(CODES.CONTEXT); // from-end needs a numeric magnitude
   }
   const length = atomDays(t.lo);
+  if (length < 1 || length > cycleSize(r)) {
+    fail(CODES.RANGE); // a tail must be 1..cycle long
+  }
   return (c) => {
     const [clo, chi] = cycle(c, r);
     const v = value(c, r);

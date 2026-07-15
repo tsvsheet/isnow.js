@@ -27,3 +27,15 @@ export const DOMAINS = [
   [0, 59], // minute
   [0, 59], // second
 ];
+
+/**
+ * CYCLE_SIZES is the number of distinct values in each role's parent cycle, for
+ * range-checking from-end tails and step strides. Year has no cycle (0 = an open
+ * progression, unbounded).
+ */
+const CYCLE_SIZES = [0, 12, 31, 7, 24, 60, 60];
+
+/** cycleSize returns a role's parent-cycle length (0 for year). */
+export function cycleSize(r) {
+  return CYCLE_SIZES[r];
+}

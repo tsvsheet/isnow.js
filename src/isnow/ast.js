@@ -143,5 +143,8 @@ function atom(ctx) {
 
 function qty(ctx) {
   const text = ctx.NUMBER().getText();
-  return { num: Number.parseInt(text, 10), digits: text.length, unit: ctx.NAME() === null ? '' : ctx.NAME().getText() };
+  // An out-of-representation magnitude becomes -1, a value that fails every
+  // range check (mirrors Go's strconv.Atoi overflow → -1).
+  const n = Number.parseInt(text, 10);
+  return { num: Number.isSafeInteger(n) ? n : -1, digits: text.length, unit: ctx.NAME() === null ? '' : ctx.NAME().getText() };
 }

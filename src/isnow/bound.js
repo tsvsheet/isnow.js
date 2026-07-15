@@ -135,7 +135,7 @@ function isWildcardField(f) {
     return false;
   }
   const t = f.terms[0];
-  return t.lo !== null && t.lo.star && bareTerm(t);
+  return t.lo !== null && t.lo.star && bareTerm(t) && !t.loFromEnd;
 }
 
 function isExactField(f) {
