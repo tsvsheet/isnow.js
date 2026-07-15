@@ -15,7 +15,7 @@
     "lint": "eslint src/isnow tests",
     "playground": "node playground/build.mjs"
   },
-  "license": "Apache-2.0",
+  "license": "MIT",
   "homepage": "https://uplang.org",
   "dependencies": {
     "antlr4": "4.13.2"
