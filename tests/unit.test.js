@@ -158,6 +158,12 @@ test('holds: setpos business days', () => {
   holds('*/*/* 2-6-[1] 12:00', '2026-02-26T12:00:00Z', false);
 });
 
+test('errors: a BYSETPOS weekday-span endpoint must be concrete', () => {
+  // A `*` endpoint is not a weekday: context error, not a raw TypeError (Go parity).
+  parseCode('*/*/* *-M+[1] 12:00', CODES.CONTEXT);
+  parseCode('*/*/* M-*+[1] 12:00', CODES.CONTEXT);
+});
+
 // -- intervals: "every N units" periodic recurrences (interval.js) -----------
 
 test('canonical: intervals render after the main form, before bounds', () => {
