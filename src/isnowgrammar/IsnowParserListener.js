@@ -1,135 +1,90 @@
 // Generated from IsnowParser.g4 by ANTLR 4.13.2
 // jshint ignore: start
-import antlr4 from 'antlr4';
+import antlr4 from "antlr4";
 
 // This class defines a complete listener for a parse tree produced by IsnowParser.
 export default class IsnowParserListener extends antlr4.tree.ParseTreeListener {
-
 	// Enter a parse tree produced by IsnowParser#pattern.
-	enterPattern(ctx) {
-	}
+	enterPattern(ctx) {}
 
 	// Exit a parse tree produced by IsnowParser#pattern.
-	exitPattern(ctx) {
-	}
-
+	exitPattern(ctx) {}
 
 	// Enter a parse tree produced by IsnowParser#bound.
-	enterBound(ctx) {
-	}
+	enterBound(ctx) {}
 
 	// Exit a parse tree produced by IsnowParser#bound.
-	exitBound(ctx) {
-	}
-
+	exitBound(ctx) {}
 
 	// Enter a parse tree produced by IsnowParser#boundOp.
-	enterBoundOp(ctx) {
-	}
+	enterBoundOp(ctx) {}
 
 	// Exit a parse tree produced by IsnowParser#boundOp.
-	exitBoundOp(ctx) {
-	}
-
+	exitBoundOp(ctx) {}
 
 	// Enter a parse tree produced by IsnowParser#exclusion.
-	enterExclusion(ctx) {
-	}
+	enterExclusion(ctx) {}
 
 	// Exit a parse tree produced by IsnowParser#exclusion.
-	exitExclusion(ctx) {
-	}
-
+	exitExclusion(ctx) {}
 
 	// Enter a parse tree produced by IsnowParser#spec.
-	enterSpec(ctx) {
-	}
+	enterSpec(ctx) {}
 
 	// Exit a parse tree produced by IsnowParser#spec.
-	exitSpec(ctx) {
-	}
-
+	exitSpec(ctx) {}
 
 	// Enter a parse tree produced by IsnowParser#group.
-	enterGroup(ctx) {
-	}
+	enterGroup(ctx) {}
 
 	// Exit a parse tree produced by IsnowParser#group.
-	exitGroup(ctx) {
-	}
-
+	exitGroup(ctx) {}
 
 	// Enter a parse tree produced by IsnowParser#dateGroup.
-	enterDateGroup(ctx) {
-	}
+	enterDateGroup(ctx) {}
 
 	// Exit a parse tree produced by IsnowParser#dateGroup.
-	exitDateGroup(ctx) {
-	}
-
+	exitDateGroup(ctx) {}
 
 	// Enter a parse tree produced by IsnowParser#timeGroup.
-	enterTimeGroup(ctx) {
-	}
+	enterTimeGroup(ctx) {}
 
 	// Exit a parse tree produced by IsnowParser#timeGroup.
-	exitTimeGroup(ctx) {
-	}
-
+	exitTimeGroup(ctx) {}
 
 	// Enter a parse tree produced by IsnowParser#bareGroup.
-	enterBareGroup(ctx) {
-	}
+	enterBareGroup(ctx) {}
 
 	// Exit a parse tree produced by IsnowParser#bareGroup.
-	exitBareGroup(ctx) {
-	}
-
+	exitBareGroup(ctx) {}
 
 	// Enter a parse tree produced by IsnowParser#field.
-	enterField(ctx) {
-	}
+	enterField(ctx) {}
 
 	// Exit a parse tree produced by IsnowParser#field.
-	exitField(ctx) {
-	}
-
+	exitField(ctx) {}
 
 	// Enter a parse tree produced by IsnowParser#term.
-	enterTerm(ctx) {
-	}
+	enterTerm(ctx) {}
 
 	// Exit a parse tree produced by IsnowParser#term.
-	exitTerm(ctx) {
-	}
-
+	exitTerm(ctx) {}
 
 	// Enter a parse tree produced by IsnowParser#incr.
-	enterIncr(ctx) {
-	}
+	enterIncr(ctx) {}
 
 	// Exit a parse tree produced by IsnowParser#incr.
-	exitIncr(ctx) {
-	}
-
+	exitIncr(ctx) {}
 
 	// Enter a parse tree produced by IsnowParser#atom.
-	enterAtom(ctx) {
-	}
+	enterAtom(ctx) {}
 
 	// Exit a parse tree produced by IsnowParser#atom.
-	exitAtom(ctx) {
-	}
-
+	exitAtom(ctx) {}
 
 	// Enter a parse tree produced by IsnowParser#qty.
-	enterQty(ctx) {
-	}
+	enterQty(ctx) {}
 
 	// Exit a parse tree produced by IsnowParser#qty.
-	exitQty(ctx) {
-	}
-
-
-
+	exitQty(ctx) {}
 }

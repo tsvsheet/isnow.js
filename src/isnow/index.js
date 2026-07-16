@@ -8,5 +8,5 @@
  * and the English explanation. See specs/contracts/ for the pinned semantics.
  */
 
-export { CODES, IsnowError } from './errors.js';
-export { Pattern, is, parse } from './pattern.js';
+export { CODES, IsnowError } from "./errors.js";
+export { is, Pattern, parse } from "./pattern.js";

@@ -7,33 +7,33 @@
  * isnow.go/exclusion.go.
  */
 
-import { compileAll, fieldHolds } from './compile.js';
-import { mapGroups } from './ladder.js';
-import { NUM_ROLES } from './roles.js';
-import { renderMain } from './render.js';
+import { compileAll, fieldHolds } from "./compile.js";
+import { mapGroups } from "./ladder.js";
+import { renderMain } from "./render.js";
+import { NUM_ROLES } from "./roles.js";
 
 /** excludes reports whether every field of the exclusion sub-spec holds. */
 export function excludes(e, c) {
-  for (let r = 0; r < NUM_ROLES; r += 1) {
-    if (!fieldHolds(e.fields[r], c)) {
-      return false;
-    }
-  }
-  return true;
+	for (let r = 0; r < NUM_ROLES; r += 1) {
+		if (!fieldHolds(e.fields[r], c)) {
+			return false;
+		}
+	}
+	return true;
 }
 
 /** compileExclusion compiles one exclusion sub-spec (whole-period, timeWild). */
 function compileExclusion(groups) {
-  const sl = mapGroups(groups, false, true); // timeWild: exclude the whole matching period
-  return { fields: compileAll(sl), text: ` ! ${renderMain(sl)}` };
+	const sl = mapGroups(groups, false, true); // timeWild: exclude the whole matching period
+	return { fields: compileAll(sl), text: ` ! ${renderMain(sl)}` };
 }
 
 /** compileExclusions compiles every extracted exclusion sub-spec. */
 export function compileExclusions(raw) {
-  return raw.map(compileExclusion);
+	return raw.map(compileExclusion);
 }
 
 /** renderExclusions renders each exclusion after the main form and bounds. */
 export function renderExclusions(es) {
-  return es.map((e) => e.text).join('');
+	return es.map((e) => e.text).join("");
 }

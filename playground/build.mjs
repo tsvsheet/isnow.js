@@ -6,21 +6,21 @@
  * Run with `node playground/build.mjs` (or `npm run playground`).
  */
 
-import { build } from 'esbuild';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { build } from "esbuild";
 
 const here = dirname(fileURLToPath(import.meta.url));
 
 await build({
-  entryPoints: [resolve(here, '../src/isnow/index.js')],
-  outfile: resolve(here, 'isnow.bundle.js'),
-  bundle: true,
-  format: 'esm',
-  platform: 'browser',
-  target: 'es2022',
-  minify: true,
-  sourcemap: false,
-  legalComments: 'none',
-  logLevel: 'info',
+	entryPoints: [resolve(here, "../src/isnow/index.js")],
+	outfile: resolve(here, "isnow.bundle.js"),
+	bundle: true,
+	format: "esm",
+	platform: "browser",
+	target: "es2022",
+	minify: true,
+	sourcemap: false,
+	legalComments: "none",
+	logLevel: "info",
 });
