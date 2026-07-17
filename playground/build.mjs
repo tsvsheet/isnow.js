@@ -1,5 +1,5 @@
 /**
- * Bundles @uplang/isnow (the residue in ../src/isnow) together with its antlr4
+ * Bundles @tsvsheet/isnow (the residue in ../src/isnow) together with its antlr4
  * dependency into a single self-contained ESM browser bundle. No CDN, no
  * network at runtime: the whole engine ships in playground/isnow.bundle.js.
  *

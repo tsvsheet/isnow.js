@@ -33,7 +33,7 @@ test(
 	{
 		skip: present
 			? false
-			: `corpus not present at ${CORPUS} — clone uplang/isnow as a sibling`,
+			: `corpus not present at ${CORPUS} — clone tsvsheet/isnow as a sibling`,
 	},
 	async (t) => {
 		for (const file of readdirSync(CORPUS)

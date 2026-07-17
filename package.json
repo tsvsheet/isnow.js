@@ -1,5 +1,5 @@
 {
-	"name": "@uplang/isnow",
+	"name": "@tsvsheet/isnow",
 	"version": "0.1.0",
 	"description": "isnow (DTimpalr) date/time pattern language — the JavaScript engine of the normative ANTLR grammar",
 	"type": "module",
