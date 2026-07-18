@@ -1,5 +1,5 @@
 /**
- * isnow (DTimpalr) — the JavaScript engine.
+ * isnow — the JavaScript engine.
  *
  * The grammar carries the language: the ANTLR-generated parser in
  * ../isnowgrammar does all lexing and syntax. This package holds the semantic

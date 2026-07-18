@@ -2,7 +2,7 @@
 	"name": "@tsvsheet/isnow",
 	"version": "0.1.0",
 	"private": true,
-	"description": "isnow (DTimpalr) date/time pattern language — the JavaScript engine of the normative ANTLR grammar",
+	"description": "isnow date/time pattern language — the JavaScript engine of the normative ANTLR grammar",
 	"type": "module",
 	"main": "src/isnow/index.js",
 	"exports": {
