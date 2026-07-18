@@ -1,6 +1,7 @@
 {
 	"name": "@tsvsheet/isnow",
 	"version": "0.1.0",
+	"private": true,
 	"description": "isnow (DTimpalr) date/time pattern language — the JavaScript engine of the normative ANTLR grammar",
 	"type": "module",
 	"main": "src/isnow/index.js",
@@ -16,7 +17,7 @@
 		"playground": "node playground/build.mjs"
 	},
 	"license": "MIT",
-	"homepage": "https://uplang.org",
+	"homepage": "https://tsvsheet.com/functions/isnow/",
 	"dependencies": {
 		"antlr4": "4.13.2"
 	},
