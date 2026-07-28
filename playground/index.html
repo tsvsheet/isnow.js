@@ -531,8 +531,19 @@
       '<span class="rel">' + relative(now, d) + '</span></li>').join('');
   }
 
+  // Escapes quotes as well as &<>, because the result is interpolated into
+  // attribute values (data-src="…") and not only into text. Escaping only &<>
+  // leaves a value containing a double quote free to close the attribute and
+  // open another one — CodeQL js/incomplete-html-attribute-sanitization. In text
+  // contexts the extra entities render identically, so one helper covers both.
   function escapeHtml(s) {
-    return String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+    return String(s).replace(/[&<>"']/g, (c) => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;',
+    }[c]));
   }
 
   /* ---- input wiring (debounced) ---------------------------------------- */
